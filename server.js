@@ -1,16 +1,5 @@
 
 
-
-
-
-
-
-
-
-
-
-
-
 const express = require('express');
 const nodemailer = require('nodemailer');
 const cors = require('cors');
@@ -24,13 +13,22 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // CORS configuration
+// Update this section in your server.js
 app.use(cors({
-  origin: ['http://localhost:3000', 'https://backend-production-1051.up.railway.app'],
-  credentials: true,
+  origin: true,
+  credentials: false,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'X-Requested-With', 'Accept']
 }));
 
+// Add error handling middleware
+app.use((err, req, res, next) => {
+  console.error('Error:', err);
+  res.status(500).json({
+    error: err.message || 'Internal Server Error',
+    details: process.env.NODE_ENV === 'development' ? err.stack : undefined
+  });
+});
 // Database connection pool
 const pool = mysql.createPool({
   host: process.env.DB_HOST,
