@@ -9,8 +9,18 @@ const app = express();
 // Define allowed origins first
 const allowedOrigins = [
   'http://localhost:3000',
-  'http://localhost:5000'
+  'http://localhost:5000',
+  'https://your-frontend-domain.com',
+  '*'  // During development you can temporarily allow all origins
 ];
+
+// Update CORS configuration
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'X-Requested-With', 'Accept']
+}));
 
 // Enhanced payload handling
 app.use(express.json({ limit: '50mb' }));
