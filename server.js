@@ -30,17 +30,25 @@ app.use((err, req, res, next) => {
   });
 });
 // Database connection pool
+// Update your database pool configuration
 const pool = mysql.createPool({
-  host: process.env.MYSQLHOST,        // Changed from DB_HOST
-  user: process.env.MYSQLUSER,        // Changed from DB_USER
-  password: process.env.MYSQLPASSWORD, // Changed from DB_PASSWORD
-  database: process.env.MYSQL_DATABASE, // Changed from DB_NAME
-  port: process.env.MYSQLPORT || 3306,
+  host: process.env.RAILWAY_PRIVATE_DOMAIN,
+  user: 'root',
+  password: process.env.MYSQL_ROOT_PASSWORD,
+  database: 'railway',
+  port: 3306,
   waitForConnections: true,
   connectionLimit: 10,
-  queueLimit: 0,
-  ssl: {
-    rejectUnauthorized: false
+  queueLimit: 0
+});
+
+// Add this logging to track the connection
+pool.getConnection((err, connection) => {
+  if (err) {
+    console.log('Database Connection Failed! Bad Config: ', err);
+  } else {
+    console.log('Database Connected Successfully!');
+    connection.release();
   }
 });
 
