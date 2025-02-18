@@ -7,24 +7,25 @@ const app = express();
 
 
 app.use(cors({
-    origin: '*',  // Allows all origins
-    methods: ['GET', 'POST', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    origin: ['http://localhost:3000', 'https://backenddev.railway.app', 'https://railway.app'],
     credentials: true,
-    preflightContinue: true
+    methods: ['GET', 'POST', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
   }));
   
-  // Add OPTIONS handling
+  // Enable pre-flight requests
   app.options('*', cors());
   
-  // Add error handling middleware
-  app.use((err, req, res, next) => {
-    console.error(err.stack);
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error'
-    });
+  // Headers middleware
+  app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', 'http://localhost:3000');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.header('Access-Control-Allow-Credentials', true);
+    next();
   });
+  
+  
 
 app.use(express.json());
 
