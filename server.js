@@ -14,14 +14,28 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // CORS configuration
 // Update this section in your server.js
+
+// Updated CORS configuration
 app.use(cors({
-  origin: true,
-  credentials: false,
+  origin: ['http://localhost:3000', 'https://backend-production-1051.up.railway.app'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'X-Requested-With', 'Accept']
+  credentials: true,
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// Add error handling middleware
+// Enable pre-flight requests
+app.options('*', cors());
+
+// Updated database connection
+const pool = mysql.createPool({
+  host: process.env.RAILWAY_PRIVATE_DOMAIN,
+  user: 'root',
+  password: process.env.MYSQL_ROOT_PASSWORD,
+  database: 'railway',
+  port: 3306,
+  waitForConnections: true,
+  connectionLimit: 10
+});// Add error handling middleware
 app.use((err, req, res, next) => {
   console.error('Error:', err);
   res.status(500).json({
@@ -31,16 +45,6 @@ app.use((err, req, res, next) => {
 });
 // Database connection pool
 // Update your database pool configuration
-const pool = mysql.createPool({
-  host: process.env.RAILWAY_PRIVATE_DOMAIN,
-  user: 'root',
-  password: process.env.MYSQL_ROOT_PASSWORD,
-  database: 'railway',
-  port: 3306,
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0
-});
 
 // Add this logging to track the connection
 pool.getConnection((err, connection) => {
