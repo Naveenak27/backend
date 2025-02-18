@@ -1,3 +1,16 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
 const express = require('express');
 const nodemailer = require('nodemailer');
 const cors = require('cors');
@@ -6,40 +19,18 @@ require('dotenv').config();
 
 const app = express();
 
-// Define allowed origins first
-
-// Make sure this comes BEFORE your routes
-app.use(express.json());
 // Enhanced payload handling
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// CORS configuration - now allowedOrigins is defined before being used
+// CORS configuration
 app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) === -1) {
-      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
-      return callback(new Error(msg), false);
-    }
-    return callback(null, true);
-  },
+  origin: ['http://localhost:3000', 'https://backend-production-1051.up.railway.app'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'X-Requested-With', 'Accept']
-}));
-app.use(cors({
-  origin: [
-    'http://localhost:3000',
-    'https://backend-production-1051.up.railway.app',
-    'https://your-frontend-domain.com'
-  ],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  credentials: true,
   allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'X-Requested-With', 'Accept']
 }));
 
-// Rest of your code remains the same...
 // Database connection pool
 const pool = mysql.createPool({
   host: process.env.DB_HOST,
@@ -51,7 +42,7 @@ const pool = mysql.createPool({
   queueLimit: 0
 });
 
-// Create templates table if it doesn't exist
+// Initialize database
 async function initializeDatabase() {
   try {
     const connection = await pool.getConnection();
@@ -74,23 +65,6 @@ async function initializeDatabase() {
 
 initializeDatabase();
 
-// CORS configuration
-// app.use(cors({
-//   origin: function (origin, callback) {
-//     // Allow requests with no origin (like mobile apps or curl requests)
-//     if (!origin) return callback(null, true);
-
-//     if (allowedOrigins.indexOf(origin) === -1) {
-//       const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
-//       return callback(new Error(msg), false);
-//     }
-//     return callback(null, true);
-//   },
-//   credentials: true,
-//   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-//   allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'X-Requested-With', 'Accept']
-// }));
-
 // Configure Nodemailer
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
@@ -105,8 +79,7 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-
-// Get all templates
+// Routes
 app.get('/api/templates', async (req, res) => {
   try {
     const [rows] = await pool.execute('SELECT * FROM email_templates ORDER BY name');
@@ -117,7 +90,6 @@ app.get('/api/templates', async (req, res) => {
   }
 });
 
-// Get template by ID
 app.get('/api/templates/:id', async (req, res) => {
   try {
     const [rows] = await pool.execute('SELECT * FROM email_templates WHERE id = ?', [req.params.id]);
@@ -131,7 +103,7 @@ app.get('/api/templates/:id', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch template' });
   }
 });
-// Add this endpoint after your other routes
+
 app.post('/api/seed-templates', async (req, res) => {
   try {
     const templates = [
@@ -336,7 +308,6 @@ The Team</p>
   }
 });
 
-// Create new template
 app.post('/api/templates', async (req, res) => {
   const { name, subject, body } = req.body;
   try {
@@ -351,7 +322,6 @@ app.post('/api/templates', async (req, res) => {
   }
 });
 
-// Update template
 app.put('/api/templates/:id', async (req, res) => {
   const { name, subject, body } = req.body;
   try {
@@ -366,7 +336,6 @@ app.put('/api/templates/:id', async (req, res) => {
   }
 });
 
-// Delete template
 app.delete('/api/templates/:id', async (req, res) => {
   try {
     await pool.execute('DELETE FROM email_templates WHERE id = ?', [req.params.id]);
@@ -377,11 +346,9 @@ app.delete('/api/templates/:id', async (req, res) => {
   }
 });
 
-// Email sending endpoint
 app.post('/api/send-email', async (req, res) => {
   try {
     const { from, to, cc, subject, body } = req.body;
-
     const mailOptions = {
       from: process.env.EMAIL_USER,
       replyTo: from,
@@ -396,10 +363,7 @@ app.post('/api/send-email', async (req, res) => {
       }]
     };
 
-    // Send email
     const info = await transporter.sendMail(mailOptions);
-    console.log('Email sent successfully:', info.messageId);
-
     res.status(200).json({
       success: true,
       messageId: info.messageId,
@@ -419,7 +383,6 @@ app.post('/api/send-email', async (req, res) => {
   }
 });
 
-// Health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).json({
     status: 'OK',
