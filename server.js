@@ -31,13 +31,17 @@ app.use((err, req, res, next) => {
 });
 // Database connection pool
 const pool = mysql.createPool({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
+  host: process.env.MYSQLHOST,        // Changed from DB_HOST
+  user: process.env.MYSQLUSER,        // Changed from DB_USER
+  password: process.env.MYSQLPASSWORD, // Changed from DB_PASSWORD
+  database: process.env.MYSQL_DATABASE, // Changed from DB_NAME
+  port: process.env.MYSQLPORT || 3306,
   waitForConnections: true,
   connectionLimit: 10,
-  queueLimit: 0
+  queueLimit: 0,
+  ssl: {
+    rejectUnauthorized: false
+  }
 });
 
 // Initialize database
