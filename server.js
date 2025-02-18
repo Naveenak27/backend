@@ -34,8 +34,23 @@ const pool = mysql.createPool({
   database: 'railway',
   port: 3306,
   waitForConnections: true,
-  connectionLimit: 10
-});// Add error handling middleware
+  connectionLimit: 10,
+  ssl: true
+});
+
+// Add this connection test
+pool.getConnection((err, connection) => {
+  if (err) {
+    console.log('Database Connection Details:', {
+      host: process.env.RAILWAY_PRIVATE_DOMAIN,
+      database: 'railway'
+    });
+    console.log('Connection Error:', err);
+  } else {
+    console.log('Database Connected Successfully!');
+    connection.release();
+  }
+});
 app.use((err, req, res, next) => {
   console.error('Error:', err);
   res.status(500).json({
