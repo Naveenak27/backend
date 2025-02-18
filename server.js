@@ -7,21 +7,9 @@ require('dotenv').config();
 const app = express();
 
 // Define allowed origins first
-const allowedOrigins = [
-  'http://localhost:3000',
-  'http://localhost:5000',
-  'https://your-frontend-domain.com',
-  '*'  // During development you can temporarily allow all origins
-];
 
-// Update CORS configuration
-app.use(cors({
-  origin: allowedOrigins,
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'X-Requested-With', 'Accept']
-}));
-
+// Make sure this comes BEFORE your routes
+app.use(express.json());
 // Enhanced payload handling
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
@@ -38,6 +26,16 @@ app.use(cors({
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'X-Requested-With', 'Accept']
+}));
+app.use(cors({
+  origin: [
+    'http://localhost:3000',
+    'https://backend-production-1051.up.railway.app',
+    'https://your-frontend-domain.com'
+  ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  credentials: true,
   allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'X-Requested-With', 'Accept']
 }));
 
