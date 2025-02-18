@@ -17,12 +17,22 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Updated CORS configuration
 app.use(cors({
-  origin: ['http://localhost:3000', 'https://backend-production-1051.up.railway.app'],
+  origin: '*',  // This will allow all origins during development
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  credentials: true,
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'Accept'],
+  credentials: false
 }));
 
+// Enable pre-flight for all routes
+app.options('*', cors());
+
+// Add headers middleware
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  next();
+});
 // Enable pre-flight requests
 app.options('*', cors());
 
