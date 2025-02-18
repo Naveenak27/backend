@@ -5,12 +5,14 @@ require('dotenv').config();
 
 const app = express();
 
-// Enhanced CORS configuration
+
 app.use(cors({
-  origin: 'http://localhost:3000',
-  methods: ['POST', 'GET', 'OPTIONS'],
-  allowedHeaders: ['Content-Type']
+  origin: ['http://localhost:3000', 'https://railway.app'],
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
 }));
+
 
 app.use(express.json());
 
