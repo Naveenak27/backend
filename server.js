@@ -82,6 +82,11 @@
 // }
 
 
+const express = require('express');
+const nodemailer = require('nodemailer');
+const cors = require('cors');
+const mysql = require('mysql2/promise');
+require('dotenv').config();
 
 const app = express();
 
@@ -120,10 +125,6 @@ const pool = mysql.createPool({
 
 
 
-
-const express = require('express');
-const mysql = require('mysql2/promise');
-require('dotenv').config();
 
 // Enhanced database connection configuration
 const dbConfig = {
