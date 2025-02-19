@@ -5,37 +5,19 @@ require('dotenv').config();
 
 const app = express();
 
-// Enhanced payload handling with increased limits
+// Enhanced payload handling
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// CORS configuration with multiple origins
-// Define allowed origins
-const allowedOrigins = [
-  'http://localhost:3000', 'http://localhost:3000/',
-  'https://eclectic-kheer-b99991.netlify.app'
-];
-
-// Update CORS configuration
+// CORS configuration
 app.use(cors({
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      callback(null, false);
-    }
-  },
+  origin: ['http://localhost:3000', 'https://eclectic-kheer-b99991.netlify.app'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   credentials: true,
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
-// Enable pre-flight requests for all routes
-app.options('*', cors());
 
-// Configure Nodemailer with secure settings
+// Nodemailer configuration
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
   port: 587,
@@ -49,7 +31,7 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-// Verify transporter connection
+// Verify transporter
 transporter.verify((error, success) => {
   if (error) {
     console.error('Transporter verification failed:', error);
@@ -58,12 +40,11 @@ transporter.verify((error, success) => {
   }
 });
 
-// Email sending endpoint with enhanced error handling
+// Email sending endpoint
 app.post('/api/send-email', async (req, res) => {
   try {
     const { from, to, cc, subject, body } = req.body;
 
-    // Enhanced email configuration
     const mailOptions = {
       from: process.env.EMAIL_USER,
       replyTo: from,
@@ -78,7 +59,6 @@ app.post('/api/send-email', async (req, res) => {
       }]
     };
 
-    // Send email with detailed response
     const info = await transporter.sendMail(mailOptions);
     
     res.status(200).json({
@@ -102,7 +82,7 @@ app.post('/api/send-email', async (req, res) => {
   }
 });
 
-// Health check endpoint with detailed status
+// Health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).json({
     status: 'OK',
@@ -123,7 +103,7 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Server initialization with environment info
+// Server initialization
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`✨ Server running on port ${PORT}`);
