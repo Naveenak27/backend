@@ -10,17 +10,28 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // CORS configuration with multiple origins
+// Define allowed origins
 const allowedOrigins = [
-  'http://localhost:3000',
+  'http://localhost:3000', 'http://localhost:3000/',
   'https://eclectic-kheer-b99991.netlify.app'
 ];
 
+// Update CORS configuration
 app.use(cors({
-  origin: '*',  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(null, false);
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   credentials: true,
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
-
 // Enable pre-flight requests for all routes
 app.options('*', cors());
 
