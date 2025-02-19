@@ -1,106 +1,17 @@
-// const express = require('express');
-// const nodemailer = require('nodemailer');
-// const cors = require('cors');
-// const mysql = require('mysql2/promise');
-// require('dotenv').config();
-
-// const app = express();
-
-// // Enhanced payload handling
-// app.use(express.json({ limit: '50mb' }));
-// app.use(express.urlencoded({ extended: true, limit: '50mb' }));
-
-// // CORS configuration
-// app.use(cors({
-//   origin: 'http://localhost:3000',
-//   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-//   credentials: true,
-//   allowedHeaders: ['Content-Type', 'Authorization']
-// }));
-
-// // Enable pre-flight requests
-// app.options('*', cors());
-
-// // Local database connection
-// const pool = mysql.createPool({
-//   host: '127.0.0.1',  // Use this instead of localhost
-//   user: 'root',
-//   password: '',
-//   database: 'emailtemplate',
-//   port: 3306,
-//   waitForConnections: true,
-//   connectionLimit: 10
-// });
-// // Add error handling middleware
-// app.use((err, req, res, next) => {
-//   console.error('Error:', err);
-//   res.status(500).json({
-//     error: err.message || 'Internal Server Error',
-//     details: process.env.NODE_ENV === 'development' ? err.stack : undefined
-//   });
-// });
-
-// // Database connection check
-// pool.getConnection()
-//   .then(connection => {
-//     console.log('Database Connected Successfully!');
-//     connection.release();
-//   })
-//   .catch(err => {
-//     console.log('Database Connection Failed:', err);
-//   });
-
-// // Initialize database
-// // Initialize database
-// async function initializeDatabase() {
-//   try {
-//     const connection = await pool.getConnection();
-    
-//     // Create database
-//     await connection.query('CREATE DATABASE IF NOT EXISTS emailtemplate');
-    
-//     // Switch to the database
-//     await connection.query('USE emailtemplate');
-    
-//     // Create table
-//     await connection.query(`
-//       CREATE TABLE IF NOT EXISTS email_templates (
-//         id INT AUTO_INCREMENT PRIMARY KEY,
-//         name VARCHAR(255) NOT NULL,
-//         subject VARCHAR(255),
-//         body TEXT,
-//         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-//         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-//       )
-//     `);
-    
-//     connection.release();
-//     console.log('Database initialized successfully');
-//   } catch (error) {
-//     console.error('Database initialization failed:', error);
-//   }
-// }
-
-
 const express = require('express');
 const nodemailer = require('nodemailer');
 const cors = require('cors');
-const mysql = require('mysql2/promise');
 require('dotenv').config();
 
 const app = express();
-
-
-
-
 
 // Enhanced payload handling
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// CORS configuration - Update with your Railway frontend URL
+// CORS configuration
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: 'http://localhost:3000',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   credentials: true,
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -108,103 +19,6 @@ app.use(cors({
 
 // Enable pre-flight requests
 app.options('*', cors());
-
-// Railway database connection configuration
-const pool = mysql.createPool({
-  host: process.env.MYSQLHOST || 'metro.proxy.rlwy.net',
-  user: process.env.MYSQLUSER || 'root',
-  password: process.env.MYSQL_ROOT_PASSWORD,
-  database: process.env.MYSQL_DATABASE || 'railway',
-  port: parseInt(process.env.MYSQLPORT || '3306'),
-  waitForConnections: true,
-  connectionLimit: 10,
-  ssl: {
-    rejectUnauthorized: false
-  }
-});
-
-
-
-
-// Enhanced database connection configuration
-const dbConfig = {
-  host: process.env.MYSQLHOST || 'metro.proxy.rlwy.net',
-  user: process.env.MYSQLUSER || 'root',
-  password: process.env.MYSQL_ROOT_PASSWORD,
-  database: process.env.MYSQL_DATABASE || 'railway',
-  port: parseInt(process.env.MYSQLPORT || '3306'),
-  waitForConnections: true,
-  connectionLimit: 5,  // Reduced from 10 to prevent overwhelming the connection
-  queueLimit: 0,
-  enableKeepAlive: true,
-  keepAliveInitialDelay: 0,
-  connectTimeout: 20000, // Increased timeout to 20 seconds
-  ssl: {
-    rejectUnauthorized: false
-  }
-};
-
-// Create connection pool with retry logic
-const createPool = async (retries = 5) => {
-  for (let i = 0; i < retries; i++) {
-    try {
-      const pool = mysql.createPool(dbConfig);
-      
-      // Test the connection
-      const connection = await pool.getConnection();
-      console.log('Successfully connected to Railway MySQL database!');
-      connection.release();
-      
-      return pool;
-    } catch (error) {
-      console.error(`Connection attempt ${i + 1} failed:`, error.message);
-      if (i === retries - 1) throw error;
-      // Wait for 5 seconds before retrying
-      await new Promise(resolve => setTimeout(resolve, 5000));
-    }
-  }
-};
-
-// Initialize database with retry mechanism
-
-
-// Initialize database
-async function initializeDatabase(pool) {
-  let retries = 5;
-  while (retries > 0) {
-    try {
-      const connection = await pool.getConnection();
-      
-      console.log('Connected, creating table...');
-      
-      // Create table
-      await connection.query(`
-        CREATE TABLE IF NOT EXISTS email_templates (
-          id INT AUTO_INCREMENT PRIMARY KEY,
-          name VARCHAR(255) NOT NULL,
-          subject VARCHAR(255),
-          body TEXT,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-        )
-      `);
-      
-      connection.release();
-      console.log('Database initialized successfully');
-      return true;
-    } catch (error) {
-      console.error(`Database initialization attempt ${6 - retries} failed:`, error.message);
-      retries--;
-      if (retries === 0) {
-        throw error;
-      }
-      // Wait before retrying
-      await new Promise(resolve => setTimeout(resolve, 5000));
-    }
-  }
-}
-
-initializeDatabase();
 
 // Configure Nodemailer
 const transporter = nodemailer.createTransport({
@@ -220,69 +34,7 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-// Routes
-app.get('/api/templates', async (req, res) => {
-  try {
-    const [rows] = await pool.execute('SELECT * FROM email_templates ORDER BY name');
-    res.json(rows);
-  } catch (error) {
-    console.error('Failed to fetch templates:', error);
-    res.status(500).json({ error: 'Failed to fetch templates' });
-  }
-});
-
-app.get('/api/templates/:id', async (req, res) => {
-  try {
-    const [rows] = await pool.execute('SELECT * FROM email_templates WHERE id = ?', [req.params.id]);
-    if (rows.length === 0) {
-      res.status(404).json({ error: 'Template not found' });
-      return;
-    }
-    res.json(rows[0]);
-  } catch (error) {
-    console.error('Failed to fetch template:', error);
-    res.status(500).json({ error: 'Failed to fetch template' });
-  }
-});
-
-app.post('/api/templates', async (req, res) => {
-  const { name, subject, body } = req.body;
-  try {
-    const [result] = await pool.execute(
-      'INSERT INTO email_templates (name, subject, body) VALUES (?, ?, ?)',
-      [name, subject, body]
-    );
-    res.status(201).json({ id: result.insertId, name, subject, body });
-  } catch (error) {
-    console.error('Failed to create template:', error);
-    res.status(500).json({ error: 'Failed to create template' });
-  }
-});
-
-app.put('/api/templates/:id', async (req, res) => {
-  const { name, subject, body } = req.body;
-  try {
-    await pool.execute(
-      'UPDATE email_templates SET name = ?, subject = ?, body = ? WHERE id = ?',
-      [name, subject, body, req.params.id]
-    );
-    res.json({ id: req.params.id, name, subject, body });
-  } catch (error) {
-    console.error('Failed to update template:', error);
-    res.status(500).json({ error: 'Failed to update template' });
-  }
-});
-
-app.delete('/api/templates/:id', async (req, res) => {
-  try {
-    await pool.execute('DELETE FROM email_templates WHERE id = ?', [req.params.id]);
-    res.json({ message: 'Template deleted successfully' });
-  } catch (error) {
-    console.error('Failed to delete template:', error);
-    res.status(500).json({ error: 'Failed to delete template' });
-  }
-});
-
+// Email sending endpoint
 app.post('/api/send-email', async (req, res) => {
   try {
     const { from, to, cc, subject, body } = req.body;
@@ -320,6 +72,7 @@ app.post('/api/send-email', async (req, res) => {
   }
 });
 
+// Health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).json({
     status: 'OK',
@@ -332,7 +85,3 @@ app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Email service configured for: ${process.env.EMAIL_USER}`);
 });
-
-
-
-module.exports = { createPool, initializeDatabase };
