@@ -90,6 +90,10 @@ require('dotenv').config();
 
 const app = express();
 
+
+
+
+
 // Enhanced payload handling
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
@@ -119,27 +123,88 @@ const pool = mysql.createPool({
   }
 });
 
+
+
+
+const express = require('express');
+const mysql = require('mysql2/promise');
+require('dotenv').config();
+
+// Enhanced database connection configuration
+const dbConfig = {
+  host: process.env.MYSQLHOST || 'metro.proxy.rlwy.net',
+  user: process.env.MYSQLUSER || 'root',
+  password: process.env.MYSQL_ROOT_PASSWORD,
+  database: process.env.MYSQL_DATABASE || 'railway',
+  port: parseInt(process.env.MYSQLPORT || '3306'),
+  waitForConnections: true,
+  connectionLimit: 5,  // Reduced from 10 to prevent overwhelming the connection
+  queueLimit: 0,
+  enableKeepAlive: true,
+  keepAliveInitialDelay: 0,
+  connectTimeout: 20000, // Increased timeout to 20 seconds
+  ssl: {
+    rejectUnauthorized: false
+  }
+};
+
+// Create connection pool with retry logic
+const createPool = async (retries = 5) => {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const pool = mysql.createPool(dbConfig);
+      
+      // Test the connection
+      const connection = await pool.getConnection();
+      console.log('Successfully connected to Railway MySQL database!');
+      connection.release();
+      
+      return pool;
+    } catch (error) {
+      console.error(`Connection attempt ${i + 1} failed:`, error.message);
+      if (i === retries - 1) throw error;
+      // Wait for 5 seconds before retrying
+      await new Promise(resolve => setTimeout(resolve, 5000));
+    }
+  }
+};
+
+// Initialize database with retry mechanism
+
+
 // Initialize database
-async function initializeDatabase() {
-  try {
-    const connection = await pool.getConnection();
-    
-    // Create table
-    await connection.query(`
-      CREATE TABLE IF NOT EXISTS email_templates (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        name VARCHAR(255) NOT NULL,
-        subject VARCHAR(255),
-        body TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-      )
-    `);
-    
-    connection.release();
-    console.log('Database initialized successfully');
-  } catch (error) {
-    console.error('Database initialization failed:', error);
+async function initializeDatabase(pool) {
+  let retries = 5;
+  while (retries > 0) {
+    try {
+      const connection = await pool.getConnection();
+      
+      console.log('Connected, creating table...');
+      
+      // Create table
+      await connection.query(`
+        CREATE TABLE IF NOT EXISTS email_templates (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          name VARCHAR(255) NOT NULL,
+          subject VARCHAR(255),
+          body TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        )
+      `);
+      
+      connection.release();
+      console.log('Database initialized successfully');
+      return true;
+    } catch (error) {
+      console.error(`Database initialization attempt ${6 - retries} failed:`, error.message);
+      retries--;
+      if (retries === 0) {
+        throw error;
+      }
+      // Wait before retrying
+      await new Promise(resolve => setTimeout(resolve, 5000));
+    }
   }
 }
 
@@ -271,3 +336,7 @@ app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Email service configured for: ${process.env.EMAIL_USER}`);
 });
+
+
+
+module.exports = { createPool, initializeDatabase };
