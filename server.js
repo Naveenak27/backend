@@ -15,22 +15,23 @@ const allowedOrigins = [
   'https://eclectic-kheer-b99991.netlify.app'
 ];
 
+// Updated CORS configuration for Railway backend
 app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      callback(null, false);
-    }
-  },
+  origin: [
+    'http://localhost:3000',
+    'https://eclectic-kheer-b99991.netlify.app',
+    'http://backend-production-1051.up.railway.app'
+  ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   credentials: true,
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  exposedHeaders: ['Content-Length', 'X-Foo', 'X-Bar'],
+  preflightContinue: false,
+  optionsSuccessStatus: 204
 }));
 
-// Enable pre-flight requests for all routes
+// Ensure OPTIONS requests are handled correctly
 app.options('*', cors());
-
 // Configure Nodemailer with secure settings
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
