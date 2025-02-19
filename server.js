@@ -82,11 +82,6 @@
 // }
 
 
-const express = require('express');
-const nodemailer = require('nodemailer');
-const cors = require('cors');
-const mysql = require('mysql2/promise');
-require('dotenv').config();
 
 const app = express();
 
