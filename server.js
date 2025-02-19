@@ -1,3 +1,85 @@
+// const express = require('express');
+// const nodemailer = require('nodemailer');
+// const cors = require('cors');
+// const mysql = require('mysql2/promise');
+// require('dotenv').config();
+
+// const app = express();
+
+// // Enhanced payload handling
+// app.use(express.json({ limit: '50mb' }));
+// app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+// // CORS configuration
+// app.use(cors({
+//   origin: 'http://localhost:3000',
+//   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+//   credentials: true,
+//   allowedHeaders: ['Content-Type', 'Authorization']
+// }));
+
+// // Enable pre-flight requests
+// app.options('*', cors());
+
+// // Local database connection
+// const pool = mysql.createPool({
+//   host: '127.0.0.1',  // Use this instead of localhost
+//   user: 'root',
+//   password: '',
+//   database: 'emailtemplate',
+//   port: 3306,
+//   waitForConnections: true,
+//   connectionLimit: 10
+// });
+// // Add error handling middleware
+// app.use((err, req, res, next) => {
+//   console.error('Error:', err);
+//   res.status(500).json({
+//     error: err.message || 'Internal Server Error',
+//     details: process.env.NODE_ENV === 'development' ? err.stack : undefined
+//   });
+// });
+
+// // Database connection check
+// pool.getConnection()
+//   .then(connection => {
+//     console.log('Database Connected Successfully!');
+//     connection.release();
+//   })
+//   .catch(err => {
+//     console.log('Database Connection Failed:', err);
+//   });
+
+// // Initialize database
+// // Initialize database
+// async function initializeDatabase() {
+//   try {
+//     const connection = await pool.getConnection();
+    
+//     // Create database
+//     await connection.query('CREATE DATABASE IF NOT EXISTS emailtemplate');
+    
+//     // Switch to the database
+//     await connection.query('USE emailtemplate');
+    
+//     // Create table
+//     await connection.query(`
+//       CREATE TABLE IF NOT EXISTS email_templates (
+//         id INT AUTO_INCREMENT PRIMARY KEY,
+//         name VARCHAR(255) NOT NULL,
+//         subject VARCHAR(255),
+//         body TEXT,
+//         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+//         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+//       )
+//     `);
+    
+//     connection.release();
+//     console.log('Database initialized successfully');
+//   } catch (error) {
+//     console.error('Database initialization failed:', error);
+//   }
+// }
 
 
 const express = require('express');
@@ -12,72 +94,28 @@ const app = express();
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// CORS configuration
-// Update this section in your server.js
-
-// Updated CORS configuration
+// CORS configuration - Update with your Railway frontend URL
 app.use(cors({
-  origin: '*',  // This will allow all origins during development
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'Accept'],
-  credentials: false
+  credentials: true,
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// Enable pre-flight for all routes
-app.options('*', cors());
-
-// Add headers middleware
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  next();
-});
 // Enable pre-flight requests
 app.options('*', cors());
 
-// Updated database connection
+// Railway database connection configuration
 const pool = mysql.createPool({
-  host: process.env.RAILWAY_PRIVATE_DOMAIN,
-  user: 'root',
+  host: process.env.MYSQLHOST || 'metro.proxy.rlwy.net',
+  user: process.env.MYSQLUSER || 'root',
   password: process.env.MYSQL_ROOT_PASSWORD,
-  database: 'railway',
-  port: 3306,
+  database: process.env.MYSQL_DATABASE || 'railway',
+  port: parseInt(process.env.MYSQLPORT || '3306'),
   waitForConnections: true,
   connectionLimit: 10,
-  ssl: true
-});
-
-// Add this connection test
-pool.getConnection((err, connection) => {
-  if (err) {
-    console.log('Database Connection Details:', {
-      host: process.env.RAILWAY_PRIVATE_DOMAIN,
-      database: 'railway'
-    });
-    console.log('Connection Error:', err);
-  } else {
-    console.log('Database Connected Successfully!');
-    connection.release();
-  }
-});
-app.use((err, req, res, next) => {
-  console.error('Error:', err);
-  res.status(500).json({
-    error: err.message || 'Internal Server Error',
-    details: process.env.NODE_ENV === 'development' ? err.stack : undefined
-  });
-});
-// Database connection pool
-// Update your database pool configuration
-
-// Add this logging to track the connection
-pool.getConnection((err, connection) => {
-  if (err) {
-    console.log('Database Connection Failed! Bad Config: ', err);
-  } else {
-    console.log('Database Connected Successfully!');
-    connection.release();
+  ssl: {
+    rejectUnauthorized: false
   }
 });
 
@@ -85,7 +123,9 @@ pool.getConnection((err, connection) => {
 async function initializeDatabase() {
   try {
     const connection = await pool.getConnection();
-    await connection.execute(`
+    
+    // Create table
+    await connection.query(`
       CREATE TABLE IF NOT EXISTS email_templates (
         id INT AUTO_INCREMENT PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
@@ -95,6 +135,7 @@ async function initializeDatabase() {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       )
     `);
+    
     connection.release();
     console.log('Database initialized successfully');
   } catch (error) {
@@ -117,17 +158,7 @@ const transporter = nodemailer.createTransport({
     rejectUnauthorized: false
   }
 });
-// Updated CORS configuration
-app.use(cors());
-app.use(express.json());
 
-// Add these headers to all responses
-app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  next();
-});
 // Routes
 app.get('/api/templates', async (req, res) => {
   try {
@@ -150,210 +181,6 @@ app.get('/api/templates/:id', async (req, res) => {
   } catch (error) {
     console.error('Failed to fetch template:', error);
     res.status(500).json({ error: 'Failed to fetch template' });
-  }
-});
-
-app.post('/api/seed-templates', async (req, res) => {
-  try {
-    const templates = [
-      {
-        name: 'Welcome Email',
-        subject: 'Welcome to Our Platform',
-        body: `
-        
-<h1>Welcome to Our Newsletter!</h1>
-
-<p>Dear Valued Customer,</p>
-
-<div style="color: #444;">
-  <p>We're excited to share our latest updates with you:</p>
-  
-  <ul>
-    <li>🚀 <strong>New Product Launch</strong> - Check out our latest innovation</li>
-    <li>💡 <strong>Tips & Tricks</strong> - Maximize your productivity</li>
-    <li>🎉 <strong>Special Offer</strong> - 25% off for early birds</li>
-  </ul>
-
-  <blockquote style="border-left: 4px solid #ccc; padding-left: 15px; margin: 15px 0;">
-    "Success is not final, failure is not fatal: it is the courage to continue that counts."
-  </blockquote>
-
-  <h2>Featured Items</h2>
-  
-  <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px;">
-    <p>✨ <strong>Premium Package</strong></p>
-    <p>Includes:</p>
-    <ul>
-      <li>24/7 Support</li>
-      <li>Advanced Features</li>
-      <li>Priority Access</li>
-    </ul>
-  </div>
-
-  <p>For more information, visit our <a href="https://example.com">website</a>.</p>
-</div>
-
-<p style="color: #666;">Best regards,<br>
-The Team</p>
-            
-            `
-      },
-      {
-        name: 'Monthly Newsletter',
-        subject: 'Your Monthly Update',
-        body: `
-<!-- Welcome Email Template -->
-<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-    <h1 style="color: #2C3E50; text-align: center; border-bottom: 2px solid #3498DB; padding-bottom: 10px;">
-        🌟 Welcome to [Company Name]!
-    </h1>
-    
-    <p style="color: #34495E; font-size: 16px;">Dear [Name],</p>
-    
-    <div style="background: linear-gradient(to right, #E8F4F8, #D4E6F1); padding: 20px; border-radius: 10px;">
-        <p style="margin: 0;">We're thrilled to have you join our community!</p>
-    </div>
-
-    <div style="margin: 20px 0;">
-        <h2 style="color: #2980B9;">Getting Started</h2>
-        <ul style="list-style: none; padding: 0;">
-            <li style="margin: 10px 0;">
-                <span style="background: #3498DB; color: white; padding: 2px 8px; border-radius: 12px; margin-right: 10px;">1</span>
-                Complete your profile
-            </li>
-            <li style="margin: 10px 0;">
-                <span style="background: #3498DB; color: white; padding: 2px 8px; border-radius: 12px; margin-right: 10px;">2</span>
-                Explore our features
-            </li>
-            <li style="margin: 10px 0;">
-                <span style="background: #3498DB; color: white; padding: 2px 8px; border-radius: 12px; margin-right: 10px;">3</span>
-                Connect with others
-            </li>
-        </ul>
-    </div>
-</div>
-            
-            `
-      },
-      {
-        name: 'promotional template',
-        subject: 'promotional',
-        body: `
-<!-- Promotional Email Template -->
-<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-    <div style="background: linear-gradient(45deg, #FF416C, #FF4B2B); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-        <h1 style="margin: 0;">🔥 Flash Sale!</h1>
-        <p style="font-size: 24px; margin: 10px 0;">50% OFF Everything</p>
-        <p style="font-size: 18px;">Limited Time Only</p>
-    </div>
-
-    <div style="padding: 20px; background: #fff; border-radius: 0 0 10px 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-        <div style="text-align: center; margin: 20px 0;">
-            <span style="font-size: 32px; font-weight: bold; color: #FF416C;">SAVE50</span>
-            <p>Use code at checkout</p>
-        </div>
-
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0;">
-            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; text-align: center;">
-                <h3 style="color: #FF416C; margin: 0;">Premium Plan</h3>
-                <p style="font-size: 24px; margin: 10px 0;">$49.99</p>
-                <p style="text-decoration: line-through; color: #666;">$99.99</p>
-            </div>
-            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; text-align: center;">
-                <h3 style="color: #FF416C; margin: 0;">Basic Plan</h3>
-                <p style="font-size: 24px; margin: 10px 0;">$24.99</p>
-                <p style="text-decoration: line-through; color: #666;">$49.99</p>
-            </div>
-        </div>
-    </div>
-</div>
-            
-            `
-      },
-      {
-        name: 'promotional template',
-        subject: 'promotional',
-        body: `
-<!-- Promotional Email Template -->
-<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-    <div style="background: linear-gradient(45deg, #FF416C, #FF4B2B); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-        <h1 style="margin: 0;">🔥 Flash Sale!</h1>
-        <p style="font-size: 24px; margin: 10px 0;">50% OFF Everything</p>
-        <p style="font-size: 18px;">Limited Time Only</p>
-    </div>
-
-    <div style="padding: 20px; background: #fff; border-radius: 0 0 10px 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-        <div style="text-align: center; margin: 20px 0;">
-            <span style="font-size: 32px; font-weight: bold; color: #FF416C;">SAVE50</span>
-            <p>Use code at checkout</p>
-        </div>
-
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0;">
-            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; text-align: center;">
-                <h3 style="color: #FF416C; margin: 0;">Premium Plan</h3>
-                <p style="font-size: 24px; margin: 10px 0;">$49.99</p>
-                <p style="text-decoration: line-through; color: #666;">$99.99</p>
-            </div>
-            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; text-align: center;">
-                <h3 style="color: #FF416C; margin: 0;">Basic Plan</h3>
-                <p style="font-size: 24px; margin: 10px 0;">$24.99</p>
-                <p style="text-decoration: line-through; color: #666;">$49.99</p>
-            </div>
-        </div>
-    </div>
-</div>
-            
-            `
-      }
-,      {
-  name: 'event template',
-  subject: 'Your invited',
-  body: `
-<!-- Event Invitation Template -->
-<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-    <div style="background: linear-gradient(120deg, #84fab0, #8fd3f4); padding: 40px; text-align: center; border-radius: 15px;">
-        <h1 style="color: #fff; margin: 0; font-size: 32px;">You're Invited! 🎉</h1>
-        <p style="color: #fff; font-size: 20px; margin: 10px 0;">Annual Tech Conference 2024</p>
-    </div>
-
-    <div style="padding: 30px; background: #fff; border-radius: 15px; margin-top: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-        <div style="text-align: center; margin-bottom: 30px;">
-            <div style="display: inline-block; background: #f8f9fa; padding: 15px 30px; border-radius: 8px;">
-                <p style="margin: 0; color: #666;">Save the Date</p>
-                <h2 style="margin: 5px 0; color: #2C3E50;">March 15, 2024</h2>
-                <p style="margin: 0; color: #666;">9:00 AM - 5:00 PM</p>
-            </div>
-        </div>
-
-        <h3 style="color: #2C3E50; text-align: center;">Featured Speakers</h3>
-        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin: 20px 0;">
-            <div style="text-align: center;">
-                <div style="width: 80px; height: 80px; background: #e9ecef; border-radius: 50%; margin: 0 auto;"></div>
-                <p style="margin: 5px 0; font-weight: bold;">John Doe</p>
-                <p style="margin: 0; color: #666; font-size: 14px;">CEO, Tech Co</p>
-            </div>
-            <!-- Add more speakers similarly -->
-        </div>
-    </div>
-</div>
-      `
-}
-
-
-
-    ];
-
-    for (const template of templates) {
-      await pool.execute(
-        'INSERT INTO email_templates (name, subject, body) VALUES (?, ?, ?)',
-        [template.name, template.subject, template.body]
-      );
-    }
-
-    res.json({ message: 'Templates added successfully' });
-  } catch (error) {
-    console.error('Failed to seed templates:', error);
-    res.status(500).json({ error: 'Failed to seed templates' });
   }
 });
 
