@@ -5,22 +5,33 @@ require('dotenv').config();
 
 const app = express();
 
-// Enhanced payload handling
+// Enhanced payload handling with increased limits
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// CORS configuration
+// CORS configuration with multiple origins
+const allowedOrigins = [
+  'http://localhost:3000',
+  'https://eclectic-kheer-b99991.netlify.app'
+];
+
 app.use(cors({
-  origin: 'http://localhost:3000',
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(null, false);
+    }
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   credentials: true,
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// Enable pre-flight requests
+// Enable pre-flight requests for all routes
 app.options('*', cors());
 
-// Configure Nodemailer
+// Configure Nodemailer with secure settings
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
   port: 587,
@@ -34,10 +45,21 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-// Email sending endpoint
+// Verify transporter connection
+transporter.verify((error, success) => {
+  if (error) {
+    console.error('Transporter verification failed:', error);
+  } else {
+    console.log('Server is ready to send emails');
+  }
+});
+
+// Email sending endpoint with enhanced error handling
 app.post('/api/send-email', async (req, res) => {
   try {
     const { from, to, cc, subject, body } = req.body;
+
+    // Enhanced email configuration
     const mailOptions = {
       from: process.env.EMAIL_USER,
       replyTo: from,
@@ -52,14 +74,17 @@ app.post('/api/send-email', async (req, res) => {
       }]
     };
 
+    // Send email with detailed response
     const info = await transporter.sendMail(mailOptions);
+    
     res.status(200).json({
       success: true,
       messageId: info.messageId,
       details: {
         to: mailOptions.to,
         cc: mailOptions.cc,
-        subject: mailOptions.subject
+        subject: mailOptions.subject,
+        timestamp: new Date().toISOString()
       }
     });
   } catch (error) {
@@ -67,21 +92,37 @@ app.post('/api/send-email', async (req, res) => {
     res.status(500).json({
       success: false,
       error: error.message,
-      details: error.stack
+      details: error.stack,
+      timestamp: new Date().toISOString()
     });
   }
 });
 
-// Health check endpoint
+// Health check endpoint with detailed status
 app.get('/health', (req, res) => {
   res.status(200).json({
     status: 'OK',
+    service: 'Email Service',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({
+    success: false,
+    error: 'Internal Server Error',
+    details: err.message,
     timestamp: new Date().toISOString()
   });
 });
 
+// Server initialization with environment info
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`Email service configured for: ${process.env.EMAIL_USER}`);
+  console.log(`✨ Server running on port ${PORT}`);
+  console.log(`📧 Email service configured for: ${process.env.EMAIL_USER}`);
+  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
 });
